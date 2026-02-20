@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Buckshot Tracker</title>
+<style>
+body{
+  background:#111;
+  color:white;
+  text-align:center;
+  font-family:sans-serif;
+}
+
+.section{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:32px;
+  margin:20px 0 36px;
+}
+
+.leftCol{
+  min-width:280px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+
+.titleRow{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.controls{
+  display:flex;
+  gap:12px;
+}
+
+button{
+  padding:12px 20px;
+  font-size:32px;
+  cursor:pointer;
+}
+
+.iconsRow{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.icon{
+  width:120px;
+  height:120px;
+  margin:10px;
+  cursor:pointer;
+}
+
+.slot{
+  width:120px;
+  height:120px;
+  margin:10px;
+  cursor:pointer;
+}
+
+.imgWrap{
+  position:relative;
+  display:inline-block;
+}
+
+.imgLabel{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:white;
+  font-weight:bold;
+  font-size:64px;
+  pointer-events:none;
+  text-shadow:0 0 4px black;
+}
+</style>
+</head>
+<body>
+
+<h1>Buckshot Roulette 弾管理</h1>
+  <div class="leftCol">
+<button onclick="resetAll()">リセット</button>
+  </div>
+
+<!-- 実弾 -->
+<div class="section">
+  <div class="leftCol">
+    <div class="titleRow">
+      <h2 style="margin:0;">実弾</h2>
+    </div>
+    <div id="liveIcons" class="iconsRow"></div>
+  </div>
+</div>
+
+<!-- 空砲 -->
+<div class="section">
+  <div class="leftCol">
+    <div class="titleRow">
+      <h2 style="margin:0;">空砲</h2>
+    </div>
+    <div id="blankIcons" class="iconsRow"></div>
+  </div>
+</div>
+
+<h2>装填状況: <span id="total">0</span>発</h2>
+
+<h2></h2>
+<div id="slots"></div>
+
+<script>
+const MAX = 8;
+
+let liveCount = 0;
+let blankCount = 0;
+
+const IMG = {
+  live: "live.png",
+  blank: "blank.png",
+  unknown: "unknown.png",
+  empty: "empty.png"
+};
+
+// =====================
+// カウンター生成
+// =====================
+function createIcons(containerId, type) {
+  const container = document.getElementById(containerId);
+
+  for (let i = 0; i < MAX; i++) {
+    const img = document.createElement("img");
+    img.className = "icon";
+    img.src = IMG.empty;
+
+    img.addEventListener("click", () => {
+      if (type === "live") {
+        liveCount = i + 1;
+        updateIcons("liveIcons", "live", liveCount);
+      } else {
+        blankCount = i + 1;
+        updateIcons("blankIcons", "blank", blankCount);
+      }
+      updateTotal();
+      generateSlots();
+    });
+
+    container.appendChild(img);
+  }
+}
+
+function resetAll(){
+  liveCount = 0;
+  blankCount = 0;
+
+  updateIcons("liveIcons","live",0);
+  updateIcons("blankIcons","blank",0);
+
+  updateTotal();
+  generateSlots();
+}
+
+// =====================
+// カウンター表示更新
+// =====================
+function updateIcons(containerId, type, count) {
+  const images = document.getElementById(containerId).getElementsByTagName("img");
+  for (let i = 0; i < images.length; i++) {
+    images[i].src = (i < count) ? IMG[type] : IMG.empty;
+  }
+}
+
+// =====================
+// 合計更新
+// =====================
+function updateTotal() {
+  document.getElementById("total").textContent = liveCount + blankCount;
+}
+
+// =====================
+// スロット生成（初期 unknown）
+// =====================
+function generateSlots() {
+  const total = liveCount + blankCount;
+  const container = document.getElementById("slots");
+  container.innerHTML = "";
+
+  for (let i = 0; i < total; i++) {
+
+    const wrap = document.createElement("div");
+    wrap.className = "imgWrap";
+
+    const img = document.createElement("img");
+    img.className = "slot";
+    img.dataset.state = 0;
+    img.src = IMG.unknown;
+
+    const label = document.createElement("div");
+    label.className = "imgLabel";
+    label.textContent = "";
+
+    function applyState(state){
+      if (state === 0) { img.src = IMG.unknown;   label.textContent = ""; }
+      if (state === 1) { img.src = IMG.live;  label.textContent = ""; }
+      if (state === 2) { img.src = IMG.live;   label.textContent = "済" ; }
+      if (state === 3) { img.src = IMG.blank;label.textContent = ""; }
+      if (state === 4) { img.src = IMG.blank;  label.textContent = "済" ; }
+    }
+
+    img.addEventListener("click", () => {
+      let state = parseInt(img.dataset.state, 10);
+      state = (state + 1) % 5;
+      img.dataset.state = state;
+      applyState(state);
+    });
+
+    applyState(0);
+    wrap.appendChild(img);
+    wrap.appendChild(label);
+    container.appendChild(wrap);
+  }
+}
+
+// 初期生成
+createIcons("liveIcons", "live");
+createIcons("blankIcons", "blank");
+updateTotal();
+</script>
+
+</body>
+</html>
